@@ -299,13 +299,6 @@ setup_dns() {
     if networksetup -setdnsservers "Wi-Fi" "$DNS_SERVER"; then
         log_info "成功为Wi-Fi设置DNS服务器: $DNS_SERVER"
         
-        # 添加DNS服务器的路由，确保DNS查询通过WiFi网卡
-        local wifi_gateway=$(get_gateway "$WIFI_INTERFACE")
-        if [[ -n "$wifi_gateway" ]]; then
-            route add -host "$DNS_SERVER" "$wifi_gateway" 2>/dev/null || true
-            log_info "添加DNS服务器路由: $DNS_SERVER -> $wifi_gateway (via $WIFI_INTERFACE)"
-        fi
-        
         # 刷新DNS缓存
         sudo dscacheutil -flushcache 2>/dev/null || true
         sudo killall -HUP mDNSResponder 2>/dev/null || true
@@ -334,9 +327,6 @@ restore_dns() {
             networksetup -setdnsservers "Wi-Fi" "$original_dns" 2>/dev/null || true
             log_info "已恢复Wi-Fi DNS设置: $original_dns"
         fi
-        
-        # 删除DNS服务器的特定路由
-        route delete -host "$DNS_SERVER" 2>/dev/null || true
         
         # 刷新DNS缓存
         sudo dscacheutil -flushcache 2>/dev/null || true
@@ -628,10 +618,6 @@ check_routes() {
     networksetup -getdnsservers "Wi-Fi" 2>/dev/null || echo "无法获取DNS设置"
     
     echo ""
-    echo "DNS服务器路由:"
-    route -n get "$DNS_SERVER" 2>/dev/null || echo "未找到DNS服务器路由"
-    
-    echo ""
     echo "=== 当前路由表（前20条）==="
     netstat -rn | head -20
     
@@ -683,7 +669,7 @@ macOS-Route-Splitter - macOS 网络路由分流器，智能分流网络流量
     - 自动检测DEMO Mobile Boardband网卡
     - 从国内镜像源下载最新中国IP地址段
     - 中国IP通过WiFi网卡访问，其他IP通过DEMO网卡
-    - DNS服务器设置为10.8.4.21，并强制通过WiFi网卡访问
+    - DNS服务器通过系统自动路由，不强制指定网卡
     - 自动备份和恢复路由表及DNS设置
     - 支持连接测试和状态检查
 
